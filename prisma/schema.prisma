@@ -1,0 +1,375 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id
+  firstName       String
+  lastName        String
+  email           String
+  avatarUrl       String?
+  createdAt       DateTime        @default(now())
+  isAdmin         Boolean         @default(false)
+  ProfileComplete Boolean         @default(false)
+  city            String?
+  province        String?
+  streetAddress   String?
+  phoneNumber     String?
+  isActive        Boolean         @default(true)
+  password        String?
+  latitude        String?
+  longitude       String?
+  Agency          Agency[]
+  Agent           Agent[]
+  project         Project[]
+  Property        Property[]
+  subscription    Subscriptions[]
+}
+
+model Property {
+  id             Int                @id @default(autoincrement())
+  name           String
+  description    String
+  price          Int
+  userId         String
+  typeId         Int
+  statusId       Int
+  DetailId       Int
+  createdAt      DateTime           @default(now())
+  StatusProperty StatusProperty     @default(ACCEPTED)
+  contact        Contact?
+  typeDetail     PropertyTypeDetail @relation(fields: [DetailId], references: [id])
+  status         PropertyStatus     @relation(fields: [statusId], references: [id])
+  type           PropertyType       @relation(fields: [typeId], references: [id])
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature        PropertyFeature?
+  images         PropertyImage[]
+  location       PropertyLocation?
+}
+
+model Contact {
+  id         Int       @id @default(autoincrement())
+  name       String
+  phone      String
+  email      String
+  propertyId Int       @unique
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyImage {
+  id         Int       @id @default(autoincrement())
+  url        String
+  propertyId Int
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyFeature {
+  id              Int      @id @default(autoincrement())
+  bedrooms        Int
+  bathrooms       Int
+  parkingSpots    Int
+  area            Int
+  hasSwimmingPool Boolean
+  hasGardenYard   Boolean
+  hasBalcony      Boolean
+  propertyId      Int      @unique
+  areaType        AreaType
+  created         DateTime @default(now())
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyLocation {
+  id            Int      @id @default(autoincrement())
+  streetAddress String
+  propertyId    Int      @unique
+  cityId        Int
+  stateId       Int
+  createdAt     DateTime @default(now())
+  city          City     @relation(fields: [cityId], references: [id])
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  state         State    @relation(fields: [stateId], references: [id])
+}
+
+model State {
+  id               Int                @id @default(autoincrement())
+  value            String
+  created          DateTime           @default(now())
+  cities           City[]
+  PropertyLocation PropertyLocation[]
+}
+
+model City {
+  id               Int                @id @default(autoincrement())
+  value            String
+  stateId          Int
+  createdAt        DateTime?          @default(now()) @db.Timestamp(6)
+  state            State              @relation(fields: [stateId], references: [id])
+  PropertyLocation PropertyLocation[]
+}
+
+model PropertyType {
+  id       Int                  @id @default(autoincrement())
+  value    String
+  created  DateTime             @default(now())
+  Property Property[]
+  Details  PropertyTypeDetail[]
+}
+
+model PropertyTypeDetail {
+  id             Int          @id @default(autoincrement())
+  value          String
+  propertyTypeId Int
+  created        DateTime     @default(now())
+  agencyId       String?
+  Property       Property[]
+  propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
+}
+
+model PropertyStatus {
+  id       Int        @id @default(autoincrement())
+  value    String
+  created  DateTime   @default(now())
+  Property Property[]
+}
+
+model SubscriptionPlan {
+  id                    Int             @id @default(autoincrement())
+  name                  String
+  price                 Float
+  propertyLimit         Int
+  ImagePerPropertyLimit Int
+  features              String
+  createdAt             DateTime?       @default(now()) @db.Timestamp(6)
+  subscription          Subscriptions[]
+}
+
+model Subscriptions {
+  id        Int              @id @default(autoincrement())
+  paymentId String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  planId    Int
+  userId    String
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
+}
+
+model Project {
+  id                  String            @id @default(uuid())
+  name                String
+  developerName       String
+  images              String[]
+  projectType         ProjectType
+  projectStatus       ProjectStatus
+  launchDate          DateTime
+  expectedCompletion  DateTime?
+  city                String
+  area                String
+  googleMapsLink      String?
+  nearbyLandmarks     String
+  userId              String
+  availableUnits      Json?
+  basicAmenities      String[]
+  bookingProcedure    String
+  developerPhone      String
+  governmentApprovals String[]
+  luxuryFeatures      String[]
+  masterPlan          String?
+  nearbyFacilities    String
+  paymentPlan         Json?
+  registrationDetails String?
+  rendersAndPlans     String[]
+  siteImagesVideos    String[]
+  sizesAndLayouts     Json?
+  authorizedAgents    AuthorizedAgent[]
+  priceRange          PriceRange?
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuthorizedAgent {
+  id        String  @id @default(uuid())
+  projectId String
+  email     String
+  phone     String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PriceRange {
+  id        String  @id @default(uuid())
+  projectId String  @unique
+  minPrice  Float
+  maxPrice  Float
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Agent {
+  id                 String             @id @default(uuid())
+  fullName           String
+  profilePicture     String?
+  agentType          String
+  experience         String
+  specialization     Specialization[]
+  phoneNumber        String
+  email              String             @unique
+  officeAddress      String?
+  agencyName         String?
+  agencyLogo         String?
+  agencyRegNumber    String?
+  areasCovered       String[]
+  servicesOffered    ServiceType[]
+  totalListings      Int
+  listingLink        String?
+  testimonials       String[]
+  overallRating      Float              @default(0.0)
+  responseTime       String
+  cnicVerification   Boolean            @default(false)
+  licenseCertificate String?
+  approvalStatus     VerificationStatus @default(PENDING)
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialMediaLinks   SocialMediaLinks?
+}
+
+model SocialMediaLinks {
+  id        String  @id @default(uuid())
+  agentId   String  @unique
+  facebook  String?
+  instagram String?
+  linkedin  String?
+  agent     Agent   @relation(fields: [agentId], references: [id])
+}
+
+model Agency {
+  id                  String               @id @default(uuid())
+  name                String
+  logo                String?
+  tagline             String?
+  establishedYear     Int
+  agencyType          String
+  officeAddress       String
+  phoneNumber         String
+  email               String               @unique
+  website             String?
+  socialMedia         Json?
+  registrationNumber  String?
+  license             String?
+  areasCovered        String[]
+  totalAgents         Int
+  servicesOffered     ServiceType[]
+  totalListings       Int
+  exclusive           Boolean
+  listingLink         String?
+  testimonials        String[]
+  overallRating       Float                @default(0.0)
+  responseTime        String
+  businessCertificate String?
+  verificationStatus  VerificationStatus   @default(PENDING)
+  userId              String
+  propertyTypes       propertyType[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyDetails     propertyTypeDetails[]
+}
+
+enum AreaType {
+  SQUARE_METER
+  SQUARE_FEET
+  SQUARE_YARD
+  MARLA
+  KANAL
+}
+
+enum StatusProperty {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+}
+
+enum ProjectStatus {
+  ONGOING
+  COMPLETED
+  UPCOMING
+}
+
+enum PropertyUnit {
+  APARTMENTS
+  VILLAS
+  SHOPS
+  OFFICES
+  PLOTS
+}
+
+enum PaymentPlan {
+  INSTALLMENTS
+  FULL_PAYMENT
+}
+
+enum Specialization {
+  RESIDENTIAL
+  COMMERCIAL
+  PLOTS
+  PROJECTS
+}
+
+enum ServiceType {
+  BUY_SELL
+  RENTAL
+  INVESTMENT
+  MARKETING
+}
+
+enum PropertyCategory {
+  HOUSES
+  APARTMENTS
+  COMMERCIAL
+  PLOTS
+  PROJECTS
+}
+
+enum VerificationStatus {
+  VERIFIED
+  PENDING
+}
+
+enum propertyType {
+  HOME
+  PLOTS
+  COMMERCIAL
+  CO_WORK_SPACE
+}
+
+enum propertyTypeDetails {
+  House
+  Flat
+  Upper_Portion
+  Lower_Portion
+  Farm_House
+  Room
+  Penthouse
+  Residential_Plot
+  Commercial_Plot
+  Agriculture_Land
+  Industrial_Land
+  Plot_File
+  PLot_Form
+  Office
+  Shop
+  Factory
+  Warehouse
+  Building
+  Other
+  Office_Room
+  Software_House
+}
